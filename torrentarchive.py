@@ -61,6 +61,10 @@ class TorrentArchive:
     if not self.rename_files_check(filename_map):
       return False
 
+    if os.path.exists(new_archive_filename):
+      print("Error: target archive already exists")
+      return False
+
     try:
       # new_archive_filename may be a posixpath object which apparently can't be concatenated to a string
       # without throwing an exception. it makes sense generally but thanks to 7za's weird command line 
