@@ -1,5 +1,6 @@
 import subprocess
 import traceback
+import os
 
 class TorrentArchiveSignatureError(Exception):
   pass
