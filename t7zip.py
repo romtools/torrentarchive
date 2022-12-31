@@ -1,5 +1,5 @@
 import os, zlib, struct
-import libarchive.public
+#import libarchive.public
 
 if __name__ == '__main__':
   from torrentarchive import TorrentArchive

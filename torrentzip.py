@@ -14,10 +14,17 @@ def d(s):
 def e(s):
   print("ERROR: %s" % s)
 
+class InvalidTorrentZipError(Exception):
+  pass
+
 class TorrentZip(TorrentArchive):
   def __init__(self, archive_filename):
     super().__init__(archive_filename)
     
+    # Make sure this is a TorrentZip
+    if not self.signature_is_present(archive_filename):
+      raise InvalidTorrentZipError
+
     # Collect contents
     z = zipfile.ZipFile(archive_filename, mode='r')
     entries = []
@@ -62,14 +69,11 @@ class TorrentZip(TorrentArchive):
     current_sig = self._get_tzip_signature(path)
     actual_sig = self._generate_signature(path)
 
-    if current_sig:
-      if current_sig == actual_sig:
-        print("Existing signature is valid; skipping signing")
-        return True
-      else:
-        print("Signature mismatch! Re-signing.", current_sig, actual_sig)
+    if current_sig == actual_sig:
+      print("Existing signature is valid; skipping signing")
+      return True
     else:
-      print("No signature present; signing.")
+      print("Signature mismatch! Re-signing.", current_sig, actual_sig)
 
     # update signature
     with open(path, 'r+b') as z:

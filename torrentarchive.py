@@ -73,11 +73,12 @@ class TorrentArchive:
       cmd_list = ['7za', 'rn', str(self.archive_filename), '-u-', '-u!'+str(new_archive_filename)]
       for old_filename, new_filename in filename_map:
         cmd_list.extend([old_filename, new_filename])
-      print("Running cmd", cmd_list)
+      #print("Running cmd", cmd_list)
       s = subprocess.run(cmd_list, stdout=subprocess.PIPE)
       if s.returncode != 0:
         print("7za rn returned unexpected code %d" % s.returncode)
         print("7za output:\n%s" % s.stdout)
+        return False
     except Exception as e:
       print("Error running 7za rn:")
       traceback.print_stack()
