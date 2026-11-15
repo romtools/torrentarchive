@@ -1,9 +1,9 @@
 import os, struct, zipfile, zlib
 
 if __name__ == '__main__':
-  from torrentarchive import TorrentArchive
+  from torrentarchive import TorrentArchive, TorrentArchiveSignatureError
 else:
-  from .torrentarchive import TorrentArchive
+  from .torrentarchive import TorrentArchive, TorrentArchiveSignatureError
 
 def log(*args):
   print('[TORRENTZIP]', *args)
@@ -14,16 +14,13 @@ def d(s):
 def e(s):
   print("ERROR: %s" % s)
 
-class InvalidTorrentZipError(Exception):
-  pass
-
 class TorrentZip(TorrentArchive):
   def __init__(self, archive_filename):
     super().__init__(archive_filename)
-    
+
     # Make sure this is a TorrentZip
     if not self.signature_is_present(archive_filename):
-      raise InvalidTorrentZipError
+      raise TorrentArchiveSignatureError
 
     # Collect contents
     z = zipfile.ZipFile(archive_filename, mode='r')

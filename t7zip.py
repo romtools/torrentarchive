@@ -1,5 +1,5 @@
 import os, zlib, struct
-#import libarchive.public
+import py7zr
 
 if __name__ == '__main__':
   from torrentarchive import TorrentArchive
@@ -9,25 +9,22 @@ else:
 class T7Zip(TorrentArchive):
   def __init__(self, archive_filename):
     super().__init__(archive_filename)
-    
+
     # Populate contents, maintaining sort order in archive
     entries = []
     dir_count = 0
     file_count = 0
-    with libarchive.public.file_reader(self.archive_filename) as e:
-      for entry in e:
-        if entry.filetype.IFDIR:
+
+    with py7zr.SevenZipFile(self.archive_filename, 'r') as archive:
+      for entry in archive.list():
+        props = entry.file_properties()
+        if props['is_directory']:
           type = 'dir'
           dir_count += 1
-        elif entry.filetype.IFREG:
+        else:
           type = 'reg'
           file_count += 1
-        else:
-          print("Error: unknown filetype in archive, skipping. Path: %s" % entry.pathname)
-          continue
-
-        entries.append({'path' : entry.pathname, 'size': entry.size, 'type': type})
-
+        entries.append({'path': entry.filename, 'size': entry.uncompressed, 'crc32': entry.crc32})
     self.single_file = file_count == 1
     self.contents = {'dir_count' : dir_count, 'file_count' : file_count, 'entries' : entries}
 
@@ -62,9 +59,9 @@ class T7Zip(TorrentArchive):
 
       f.seek(size - 128 - 38)
       # read last 128 bytes + 38 bytes of t7z sig
-      last_bytes = f.read(128)  
+      last_bytes = f.read(128)
       signature = f.read(38)
-    
+
     generated_signature = self._generate_signature(first_bytes, last_bytes, size - 38)
     if generated_signature == signature:
       print("Verify OK")

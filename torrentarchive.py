@@ -31,7 +31,7 @@ class TorrentArchive:
 
   def signature_is_valid(self):
     pass
-  
+
   def signature_is_present(self):
     pass
 
@@ -54,6 +54,20 @@ class TorrentArchive:
     s = subprocess.run(['7za'], stdout=subprocess.PIPE).stdout
     return s.find(b"Rename files in archive") != -1
 
+  def extract_specific_files(self, filenames, outdir, tmpdir=None):
+    try:
+      s = subprocess.run(['7za', 'x', '-o'+outdir, str(self.archive_filename)] + filenames)
+      if s.returncode != 0:
+        print(f"7za returned unexpected code {s.returncode}")
+        print(f"7za output:\n{s.stdout}")
+        return False
+    except Exception as e:
+      print(f"Exception running 7za:")
+      traceback.print_stack()
+      traceback.print_exc()
+      return False
+    return True
+
   def rename_files(self, filename_map, new_archive_filename):
     if not self._is_7za_recent():
       print("Error: cannot rename files in archives without a recent (>=9.30) version of 7za installed and in PATH")
@@ -70,6 +84,14 @@ class TorrentArchive:
       # new_archive_filename may be a posixpath object which apparently can't be concatenated to a string
       # without throwing an exception. it makes sense generally but thanks to 7za's weird command line 
       # flags we end up needing to do it. also sprinkled a str cast on the 3rd arg for no good reason
+      #
+      # Note that the invocation below creates a new archive; you can also do it "in place" by omitting the 
+      # mysterious -u- -u!<new_filename> arguments. Note that a rename rewrites the entire archive 
+      # regardless so the disk utilization and writes are the same.
+      #
+      # There is also a switch to set working directoy (-w<dir>) that will write the temporary new archive
+      # somewhere then copy it back, but I think there is no advantage here as we only write the new archive
+      # once.
       cmd_list = ['7za', 'rn', str(self.archive_filename), '-u-', '-u!'+str(new_archive_filename)]
       for old_filename, new_filename in filename_map:
         cmd_list.extend([old_filename, new_filename])
@@ -119,9 +141,11 @@ class TorrentArchive:
       # TODO: In these cases, give user option to fully decompress/recompress (non-solid archives could be manually reordered?
       print("The current archive is in this order:\n  %s" % "\n  ".join(old_archive_filenames))
       print("Avoided writing this:\n  %s" % "\n  ".join(new_archive_filenames))
+      print(repr(old_archive_filenames))
+      print(repr(new_archive_filenames))
       print("\n\nIn these scenarios, the archive must be decompressed, renamed as needed, and recompressed. This task may be automated in the future.")
       return False
-     
+
     return True
 
 
