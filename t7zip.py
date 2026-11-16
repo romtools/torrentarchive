@@ -6,6 +6,16 @@ if __name__ == '__main__':
 else:
   from .torrentarchive import TorrentArchive
 
+def has_t7z_signature(path):
+  """Whether path ends with a T7Z signature. Checks presence only, not validity."""
+  with open(path, "rb") as f:
+    try:
+      f.seek(-38, os.SEEK_END)
+    except OSError:
+      # Shorter than the signature
+      return False
+    return f.read(38).endswith(b"torrent7z_0.9beta")
+
 class T7Zip(TorrentArchive):
   def __init__(self, archive_filename):
     super().__init__(archive_filename)
@@ -71,12 +81,7 @@ class T7Zip(TorrentArchive):
       return False
 
   def signature_is_present(self, path=None):
-    if not path:
-      path = self.archive_filename
-
-    with open(path, "rb") as f:
-      f.seek(-38, os.SEEK_END)
-      return f.read(38).endswith(b"torrent7z_0.9beta")
+    return has_t7z_signature(path or self.archive_filename)
 
   def _strip_signature(self, path=None):
     if not path:

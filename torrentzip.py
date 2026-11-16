@@ -5,6 +5,17 @@ if __name__ == '__main__':
 else:
   from .torrentarchive import TorrentArchive, TorrentArchiveSignatureError
 
+def has_tzip_signature(filename):
+  """Whether filename ends with a TorrentZip signature. Checks presence only, not validity."""
+  with open(filename, "rb") as f:
+    try:
+      f.seek(-22, os.SEEK_END)
+    except OSError:
+      # Shorter than the signature
+      return False
+    buf = f.read(13)
+  return buf == b'TORRENTZIPPED'
+
 def log(*args):
   print('[TORRENTZIP]', *args)
 
@@ -40,14 +51,7 @@ class TorrentZip(TorrentArchive):
     self.contents = {'entries': entries, 'dir_count': dir_count, 'file_count': file_count}
 
   def signature_is_present(self, filename=None):
-    if not filename:
-      filename = self.archive_filename
-    with open(filename, "rb") as f:
-      f.seek(-22, os.SEEK_END)
-      buf = f.read(13)
-      if not buf:
-        return False
-      return struct.unpack("<13s", buf)[0] == b'TORRENTZIPPED'
+    return has_tzip_signature(filename or self.archive_filename)
 
   def signature_is_valid(self, filename=None):
     if not filename:
