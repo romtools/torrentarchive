@@ -27,8 +27,7 @@ class T7Zip(TorrentArchive):
 
     with py7zr.SevenZipFile(self.archive_filename, 'r') as archive:
       for entry in archive.list():
-        props = entry.file_properties()
-        if props['is_directory']:
+        if entry.is_directory:
           type = 'dir'
           dir_count += 1
         else:
